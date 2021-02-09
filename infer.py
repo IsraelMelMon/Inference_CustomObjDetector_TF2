@@ -195,22 +195,15 @@ if __name__=="__main__":
         help="Checkpoint path that must contain: checkpoint, \
             ckpt-X.data-Y, ckpt-X.index" ,
         default="checkpoint/")
-    parser.add_argument(
-        "--labels_path",
-        help="Labels map path that indicates different classes" ,
-        default="label_map.txt")
-
     args = parser.parse_args()
 
     # Parse all the arguments
 
-    video_cam = args.video_cam
     input_path = args.input_path
     output_path = args.output_path
 
     ckpt_path = args.checkpoint_path
     config_path = args.config_path
-    labels_path = args.labels_path
 
     #Show the arguments
     print()
@@ -218,11 +211,10 @@ if __name__=="__main__":
     print("[INFO]: Output path is {}".format(output_path))
     print("[INFO]: Config path is {}".format(config_path))
     print("[INFO]: Checkpoint path is {}".format(ckpt_path))
-    print("[INFO]: Labels path is {}".format(labels_path))
     print()
     
     # run the main
-    main(input_path, output_path, config_path, ckpt_path, labels_path)
+    main(input_path, output_path, config_path, ckpt_path)
 
 
 
