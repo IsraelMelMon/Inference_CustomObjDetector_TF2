@@ -111,97 +111,106 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     #map labels for inference decoding
     label_map_path = configs['eval_input_config'].label_map_path
     #label_map_path = labels_path
+    #print(label_map_path)
+    label_map_path = os.path.join('/Users', 'israel','Inf_ObjDet_TF2HUB', 'label_map.txt')
+    print()
     print(label_map_path)
     label_map = label_map_util.load_labelmap(label_map_path)
     print("[INFO]: Done")
-    quit()
+    #quit()
+    
     categories = label_map_util.convert_label_map_to_categories(
         label_map,
         max_num_classes=label_map_util.get_max_label_map_index(label_map),
         use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
     label_map_dict = label_map_util.get_label_map_dict(label_map, use_display_name=True)
-
+    #label_map_dict = {"background":0, "object":1}
 
         #run detector on test image
     #it takes a little longer on the first run and then runs at normal speed. 
     print("[INFO]: Loaded labels...")
     print()
-    quit()
+    
     #input video for object detection inference
     vid = cv2.VideoCapture(0) # here goes the video path
     ret, im = vid.read()
     imshape = im.shape
-    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-
+    #fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+    print("read_it")
+    
     #print("same shapes?",im.shape, (im.shape[1],im.shape[0]))
 
 
     #output video name
-    videoOut = cv2.VideoWriter('output_video.avi',fourcc, 30.0, (im.shape[1],im.shape[0]))
+    #videoOut = cv2.VideoWriter('output_video.avi',fourcc, 30.0, (im.shape[1],im.shape[0]))
 
     print("[INFO] loading model...")
     print("[INFO] starting video play...")
     fps = FPS().start()
-    quit()
+    
     counter = 1
     while True:
 
         ret, frame = vid.read()
 
-        if ret:
-            
+    #if ret:
+        
 
-            #image_path = random.choice(TEST_IMAGE_PATHS)
-            (im_width, im_height) = (frame.shape[1],frame.shape[0])
-            #print(im_width, im_height)
+        #image_path = random.choice(TEST_IMAGE_PATHS)
+        (im_width, im_height) = (frame.shape[1],frame.shape[0])
+        #print(im_width, im_height)
 
-            
-            image_np = np.array(frame).reshape((im_height, im_width, 3)).astype(np.uint8)#load_image_into_numpy_array(image_path)
-            #print(image_np)
-            
-            # Things to try:
-            # Flip horizontally
-            # image_np = np.fliplr(image_np).copy()
+        
+        image_np = np.array(frame).reshape((im_height, im_width, 3)).astype(np.uint8)
+        #load_image_into_numpy_array(image_path)
+        #print(image_np)
+        
+        # Things to try:
+        # Flip horizontally
+        # image_np = np.fliplr(image_np).copy()
 
-            # Convert image to grayscale
-            # image_np = np.tile(
-            #     np.mean(image_np, 2, keepdims=True), (1, 1, 3)).astype(np.uint8)
+        # Convert image to grayscale
+        # image_np = np.tile(
+        #     np.mean(image_np, 2, keepdims=True), (1, 1, 3)).astype(np.uint8)
 
-            input_tensor = tf.convert_to_tensor(
-                np.expand_dims(image_np, 0), dtype=tf.float32)
-            detections, predictions_dict, shapes = detect_fn(input_tensor)
+        input_tensor = tf.convert_to_tensor(
+            np.expand_dims(image_np, 0), dtype=tf.float32)
+        detections, predictions_dict, shapes = detect_fn(input_tensor)
 
-            label_id_offset = 1
-            image_np_with_detections = image_np.copy()
+        label_id_offset = 1
+        image_np_with_detections = image_np.copy()
 
-            viz_utils.visualize_boxes_and_labels_on_image_array(
-                image_np_with_detections,
-                detections['detection_boxes'][0].numpy(),
-                (detections['detection_classes'][0].numpy() + label_id_offset).astype(int)-1,
-                detections['detection_scores'][0].numpy(),
-                category_index,
-                use_normalized_coordinates=True,
-                max_boxes_to_draw=200,
-                min_score_thresh=.5,
-                agnostic_mode=False,
-            )
+        viz_utils.visualize_boxes_and_labels_on_image_array(
+            image_np_with_detections,
+            detections['detection_boxes'][0].numpy(),
+            (detections['detection_classes'][0].numpy() + label_id_offset).astype(int),
+            detections['detection_scores'][0].numpy(),
+            category_index,
+            use_normalized_coordinates=True,
+            max_boxes_to_draw=100,
+            min_score_thresh=.5,
+            agnostic_mode=False,
+        )
+        #plt.figure(figsize=(12,16))
+        cv2.imshow("frame",image_np_with_detections)
 
-            #plt.figure(figsize=(12,16))
-            #plt.imshow(image_np_with_detections)
-            #plt.show()
-            #cv2.imwrite("check{0}.jpg".format(counter), cv2.cvtColor(image_np_with_detections, cv2.COLOR_RGB2BGR))
-            videoOut.write(image_np_with_detections)
-            fps.update()
-            counter = counter + 1
-        else:
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        #cv2.imwrite("check{0}.jpg".format(counter), cv2.cvtColor(image_np_with_detections, cv2.COLOR_RGB2BGR))
+        #videoOut.write(image_np_with_detections)
+
+        fps.update()
+        counter = counter + 1
+        #else:
+        #    break
         fps.stop()
 
         print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
         print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
-
-        videoOut.release()
+        vid.release()
+        cv2.destroyAllWindows()
+        #videoOut.release()
 
 if __name__=="__main__":
 
