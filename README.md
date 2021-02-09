@@ -19,8 +19,11 @@ First, get the TF Object detection API
 `git clone --depth 1 https://github.com/tensorflow/models`
 
 `cd models/research/`
+
 `protoc object_detection/protos/*.proto --python_out=. `
+
 `cp object_detection/packages/tf2/setup.py . `
+
 And we install it with
 `python -m pip install . `
 ## Now we are ready to do inferences
