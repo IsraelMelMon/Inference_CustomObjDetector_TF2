@@ -6,12 +6,6 @@ Program that runs a TF HUB pretrained object detection model
  with a pipeline config, a checkpoint folder and a label_map.pbtxt file 
 over a video camera stream. 
 
-Example of usage with a webcam:
-`python infer.py --video_cam 0 `
-
-Example of usage with a video:
-`python infer.py --input_path video.mov --output_path videoOuput.mov`
-
 Made by: Israel Melendez Montoya
 """
 import os
