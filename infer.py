@@ -232,7 +232,7 @@ if __name__=="__main__":
     parser.add_argument(
         "--labels_path",
         help="Labels map path that indicates different classes" ,
-        default="/Users/israel/Inf_ObjDet_TF2HUB/cool-label_map.pbtxt")
+        default="label_map.pbtxt")
 
     args = parser.parse_args()
 
