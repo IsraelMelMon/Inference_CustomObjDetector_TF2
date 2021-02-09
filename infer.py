@@ -32,15 +32,30 @@ from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
 
-Class VideoPredictor:
-    def __init__(self, config_path="ml_aug_model/pipeline_file.config", ckpt_path="checkpoint"):
-        # get current working directory
-        #cwd = os.path.abspath(os.getcwd())
+class VideoPredictor:
+    def __init__(self, input_path=0, output_path=None, \
+            config_path="ml_aug_model/pipeline_file.config", ckpt_path="checkpoint/"):
+        
+                # model detection function
+        def get_model_detection_function( model):
+            """Get a tf.function for detection."""
+
+            @tf.function
+            def detect_fn( image):
+                """Detect objects in image."""
+
+                image, shapes = model.preprocess(image)
+                prediction_dict = model.predict(image, shapes)
+                detections = model.postprocess(prediction_dict, shapes)
+
+                return detections, prediction_dict, tf.reshape(shapes, [-1])
+
+            return detect_fn
+
+
+        # Get adequate paths
         ckpt_name = sorted(os.listdir(ckpt_path))[1].split(".")[0]
         model_dir = ckpt_path + ckpt_name
-        #config_path = cwd+"/"+config_path
-        #model_dir = cwd+"/"+model_dir
-
         print("[INFO]: Last checkpoint is:", model_dir)
         print()
         print("[INFO]: Config path is:", config_path)
@@ -51,16 +66,16 @@ Class VideoPredictor:
         print()
         model_config = configs["model"]
 
-        detection_model = model_builder.build(
+        self.detection_model = model_builder.build(
             model_config=model_config, is_training=False)
 
         # Restore checkpoint
         ckpt = tf.compat.v2.train.Checkpoint(
-            model=detection_model)
+            model=self.detection_model)
 
         ckpt.restore(model_dir)
         print("[INFO]: Done restoring model...")
-        detect_fn = get_model_detection_function(detection_model)
+        detect_fn = get_model_detection_function(self.detection_model)
 
         #map labels for inference decoding
         label_map_path = configs['eval_input_config'].label_map_path
@@ -79,35 +94,14 @@ Class VideoPredictor:
         #it takes a little longer on the first run and then runs at normal speed. 
         print("[INFO]: Done loading labels...")
         print()
-        
-    def get_model_detection_function(self,model):
-    """Get a tf.function for detection."""
-
-    @tf.function
-    def detect_fn(self,image):
-        """Detect objects in image."""
-
-        image, shapes = model.preprocess(image)
-        prediction_dict = model.predict(image, shapes)
-        detections = model.postprocess(prediction_dict, shapes)
-
-        return detections, prediction_dict, tf.reshape(shapes, [-1])
-
-    return detect_fn
-
-
-    def start(self, input_path=0, output_path=None):
-        # we recover our saved model here
-
-        # gets the last ckpt from the ckpt folder automatically,
-        # gets full paths for ckpt and pipeline files
 
         #input video for object detection inference
         if not isinstance(input_path,int):
-            vid = WebcamVideoStream(src=0).start() # run another while function
+            self.vid = WebcamVideoStream(src=0).start() # run another while function
+            time.sleep(1.0)
         else:
-            vid = FileVideoStream(input_path).start() # run another while in a function
-        time.sleep(1.0)
+            self.vid = FileVideoStream(input_path).start() # run another while in a function
+            time.sleep(1.0)
 
         #output video name
         if output_path != None:
@@ -115,13 +109,32 @@ Class VideoPredictor:
             fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
             videoOut = cv2.VideoWriter(output_path,fourcc, 30.0, (im.shape[1],im.shape[0]))
 
+        
+  
+    def start(self, input_path=0, output_path=None):
+        # we recover our saved model here
+                # model detection function
+        @tf.function
+        def detect_fn( self, image):
+            """Detect objects in image."""
+            model = self.detection_model
+            image, shapes = model.preprocess(image)
+            prediction_dict = model.predict(image, shapes)
+            detections = model.postprocess(prediction_dict, shapes)
+
+            return detections, prediction_dict, tf.reshape(shapes, [-1])
+
+
+        # gets the last ckpt from the ckpt folder automatically,
+        # gets full paths for ckpt and pipeline files
+
         print("[INFO] loading model...")
         print("[INFO] starting video play...")
         fps = FPS().start()
         
         while True:
 
-            frame = vid.read()
+            frame = self.vid.read()
             frame = imutils.resize(frame, width=450)
 
             (im_width, im_height) = (frame.shape[1],frame.shape[0])
@@ -131,7 +144,7 @@ Class VideoPredictor:
 
             input_tensor = tf.convert_to_tensor(
                 np.expand_dims(image_np, 0), dtype=tf.float32)
-            detections, predictions_dict, shapes = detect_fn(input_tensor)
+            detections, predictions_dict, shapes = detect_fn(self,input_tensor)
 
             label_id_offset = 1
             image_np_with_detections = image_np.copy()
