@@ -92,7 +92,7 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     label_map_path = configs['eval_input_config'].label_map_path
     #label_map_path = labels_path
     #print(label_map_path)
-    label_map_path = os.path.join('/Users', 'israel','Inf_ObjDet_TF2HUB', 'label_map.txt')
+    #label_map_path = os.path.join('/Users', 'israel','Inf_ObjDet_TF2HUB', 'label_map.txt')
     print()
     print(label_map_path)
     label_map = label_map_util.load_labelmap(label_map_path)
@@ -105,7 +105,7 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
         use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
     label_map_dict = label_map_util.get_label_map_dict(label_map, use_display_name=True)
-    #label_map_dict = {"background":0, "object":1}
+    
 
         #run detector on test image
     #it takes a little longer on the first run and then runs at normal speed. 
@@ -114,18 +114,19 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     
     #input video for object detection inference
     #vid = cv2.VideoCapture("/Users/israel/Downloads/9410828E-0960-45B6-8595-61B439AF4764.mov") # here goes the video path
-    vid = FileVideoStream("/Users/israel/Downloads/9410828E-0960-45B6-8595-61B439AF4764.mov").start()
+    vid = FileVideoStream(input_path).start()
     time.sleep(1.0)
     #ret, im = vid.read()
     #imshape = im.shape
-    #fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-    print("read_it")
+    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+
     
     #print("same shapes?",im.shape, (im.shape[1],im.shape[0]))
 
 
     #output video name
-    #videoOut = cv2.VideoWriter('output_video.avi',fourcc, 30.0, (im.shape[1],im.shape[0]))
+    if output_path != None:
+        videoOut = cv2.VideoWriter(output_path,fourcc, 30.0, (im.shape[1],im.shape[0]))
 
     print("[INFO] loading model...")
     print("[INFO] starting video play...")
@@ -181,7 +182,8 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
             break
         #cv2.waitKey(1)
         #cv2.imwrite("check{0}.jpg".format(counter), cv2.cvtColor(image_np_with_detections, cv2.COLOR_RGB2BGR))
-        #videoOut.write(image_np_with_detections)
+        if output_path != None:
+            videoOut.write(image_np_with_detections)
 
         fps.update()
         #fps.fps()
@@ -204,7 +206,7 @@ if __name__=="__main__":
     parser.add_argument(
         "--input_path",
         help="Path of the video to perform object detection inferences",
-        default=None)
+        default="9410828E-0960-45B6-8595-61B439AF4764.mov")
     parser.add_argument(
         "--video_cam",
         help="Path of the video to perform object detection inferences",
@@ -226,7 +228,7 @@ if __name__=="__main__":
     parser.add_argument(
         "--labels_path",
         help="Labels map path that indicates different classes" ,
-        default="label_map.pbtxt")
+        default="label_map.txt")
 
     args = parser.parse_args()
 
