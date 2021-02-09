@@ -1,7 +1,7 @@
 # Inference_CustomObjDetector_TF2
 
 
-## To run demo:
+ To run demo:
 
 `git clone https://github.com/IsraelMelMon/Inference_CustomObjDetector_TF2.git`
 
