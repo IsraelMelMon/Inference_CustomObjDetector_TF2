@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 import cv2
 import time
-from imutils.video import FPS, FileVideoStream
+from imutils.video import FPS, FileVideoStream, WebcamVideoStream
 import imutils
 
 import tensorflow as tf
@@ -55,7 +55,7 @@ def get_model_detection_function(model):
   return detect_fn
 
 
-def main(input_path, output_path, config_path, ckpt_path, labels_path):
+def main(input_path, output_path, config_path, ckpt_path):
     # we recover our saved model here
 
     cwd = os.path.abspath(os.getcwd())
@@ -65,7 +65,6 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     model_dir = ckpt_path + ckpt_name
     config_path = cwd+"/"+config_path
     model_dir = cwd+"/"+model_dir
-    labels_path = cwd+"/"+labels_path
 
     print("[INFO]: Last checkpoint is:", model_dir)
     print()
@@ -90,14 +89,8 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
 
     #map labels for inference decoding
     label_map_path = configs['eval_input_config'].label_map_path
-    #label_map_path = labels_path
-    #print(label_map_path)
-    #label_map_path = os.path.join('/Users', 'israel','Inf_ObjDet_TF2HUB', 'label_map.txt')
-    print()
-    print(label_map_path)
     label_map = label_map_util.load_labelmap(label_map_path)
     print("[INFO]: Done")
-    #quit()
     
     categories = label_map_util.convert_label_map_to_categories(
         label_map,
@@ -107,55 +100,37 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     label_map_dict = label_map_util.get_label_map_dict(label_map, use_display_name=True)
     
 
-        #run detector on test image
+    #run detector on test image
     #it takes a little longer on the first run and then runs at normal speed. 
     print("[INFO]: Loaded labels...")
     print()
     
     #input video for object detection inference
-    #vid = cv2.VideoCapture("/Users/israel/Downloads/9410828E-0960-45B6-8595-61B439AF4764.mov") # here goes the video path
-    vid = FileVideoStream(input_path).start()
+    if not isinstance(input_path,int):
+        vid = WebcamVideoStream(src=0).start() # run another while function
+    else:
+        vid = FileVideoStream(input_path).start() # run another while in a function
     time.sleep(1.0)
-    #ret, im = vid.read()
-    #imshape = im.shape
-    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-
-    
-    #print("same shapes?",im.shape, (im.shape[1],im.shape[0]))
-
 
     #output video name
     if output_path != None:
+
+        fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
         videoOut = cv2.VideoWriter(output_path,fourcc, 30.0, (im.shape[1],im.shape[0]))
 
     print("[INFO] loading model...")
     print("[INFO] starting video play...")
     fps = FPS().start()
     
-    while vid.more():
+    while True:
 
         frame = vid.read()
         frame = imutils.resize(frame, width=450)
 
-    #if ret:
-        
-
-        #image_path = random.choice(TEST_IMAGE_PATHS)
         (im_width, im_height) = (frame.shape[1],frame.shape[0])
-        #print(im_width, im_height)
 
         
         image_np = np.array(frame).reshape((im_height, im_width, 3)).astype(np.uint8)
-        #load_image_into_numpy_array(image_path)
-        #print(image_np)
-        
-        # Things to try:
-        # Flip horizontally
-        # image_np = np.fliplr(image_np).copy()
-
-        # Convert image to grayscale
-        # image_np = np.tile(
-        #     np.mean(image_np, 2, keepdims=True), (1, 1, 3)).astype(np.uint8)
 
         input_tensor = tf.convert_to_tensor(
             np.expand_dims(image_np, 0), dtype=tf.float32)
@@ -173,31 +148,30 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
             use_normalized_coordinates=True,
             max_boxes_to_draw=100,
             min_score_thresh=.5,
-            agnostic_mode=False,
-        )
-        #plt.figure(figsize=(12,16))
+            agnostic_mode=False,)
+
         cv2.imshow("frame",image_np_with_detections)
-        #cv2.waitKey(0)
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        #cv2.waitKey(1)
-        #cv2.imwrite("check{0}.jpg".format(counter), cv2.cvtColor(image_np_with_detections, cv2.COLOR_RGB2BGR))
+
         if output_path != None:
             videoOut.write(image_np_with_detections)
 
         fps.update()
-        #fps.fps()
-        #else:
-        #    break
+
     fps.stop()
 
     print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
     print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
-    #vid.release()
+
   
     cv2.destroyAllWindows()
     vid.stop()
-    #videoOut.release()
+
+    if output_path != None:
+            videoOut.release()
+    
 
 if __name__=="__main__":
 
@@ -207,10 +181,6 @@ if __name__=="__main__":
         "--input_path",
         help="Path of the video to perform object detection inferences",
         default="9410828E-0960-45B6-8595-61B439AF4764.mov")
-    parser.add_argument(
-        "--video_cam",
-        help="Path of the video to perform object detection inferences",
-        default=0)
     parser.add_argument(
         "--output_path",
         help="Path of the output video",
@@ -246,24 +216,13 @@ if __name__=="__main__":
     print()
     print("[INFO]: Input path is {}".format(input_path))
     print("[INFO]: Output path is {}".format(output_path))
-    print("[INFO]: Video Camera is {}".format(video_cam))
     print("[INFO]: Config path is {}".format(config_path))
     print("[INFO]: Checkpoint path is {}".format(ckpt_path))
     print("[INFO]: Labels path is {}".format(labels_path))
     print()
     
-    # Conditional to open camera for inferences
-    if input_path == None:
-        print("[INFO]: Opening camera {0}, output video is {1}:".format(\
-            video_cam, output_path))
-
-        main(video_cam, output_path, config_path, ckpt_path, labels_path)
-    else:
-        print("[INFO]: Input path video is {0}, output video is {1}".format(\
-            input_path, output_path))
-
-        main(input_path, output_path, config_path, ckpt_path, labels_path)
-
+    # run the main
+    main(input_path, output_path, config_path, ckpt_path, labels_path)
 
 
 
