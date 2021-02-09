@@ -1,7 +1,4 @@
-# Inference_CustomObjDetector_TF2
 
-
- To run demo:
 
 # Inference_Object_Detection_MELI_Tensorflow_2.X
 
