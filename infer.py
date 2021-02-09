@@ -27,7 +27,9 @@ from six import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import random
 import cv2
-from imutils.video import FPS
+import time
+from imutils.video import FPS, FileVideoStream
+import imutils
 
 import tensorflow as tf
 
@@ -35,28 +37,6 @@ from object_detection.utils import label_map_util
 from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
-
-#%matplotlib inline
-
-
-def load_image_into_numpy_array(path):
-    """Load an image from file into a numpy array.
-
-    Puts image into numpy array to feed into tensorflow graph.
-    Note that by convention we put it into a numpy array with shape
-    (height, width, channels), where channels=3 for RGB.
-
-    Args:
-        path: the file path to the image
-
-    Returns:
-        uint8 numpy array with shape (img_height, img_width, 3)
-    """
-    img_data = tf.io.gfile.GFile(path, 'rb').read()
-    image = Image.open(BytesIO(img_data))
-    (im_width, im_height) = image.size
-    return np.array(image.getdata()).reshape(
-        (im_height, im_width, 3)).astype(np.uint8)
 
 
 def get_model_detection_function(model):
@@ -133,9 +113,11 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     print()
     
     #input video for object detection inference
-    vid = cv2.VideoCapture(0) # here goes the video path
-    ret, im = vid.read()
-    imshape = im.shape
+    #vid = cv2.VideoCapture("/Users/israel/Downloads/9410828E-0960-45B6-8595-61B439AF4764.mov") # here goes the video path
+    vid = FileVideoStream("/Users/israel/Downloads/9410828E-0960-45B6-8595-61B439AF4764.mov").start()
+    time.sleep(1.0)
+    #ret, im = vid.read()
+    #imshape = im.shape
     #fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
     print("read_it")
     
@@ -149,10 +131,10 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
     print("[INFO] starting video play...")
     fps = FPS().start()
     
-    counter = 1
-    while True:
+    while vid.more():
 
-        ret, frame = vid.read()
+        frame = vid.read()
+        frame = imutils.resize(frame, width=450)
 
     #if ret:
         
@@ -194,23 +176,26 @@ def main(input_path, output_path, config_path, ckpt_path, labels_path):
         )
         #plt.figure(figsize=(12,16))
         cv2.imshow("frame",image_np_with_detections)
-
+        #cv2.waitKey(0)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        #cv2.waitKey(1)
         #cv2.imwrite("check{0}.jpg".format(counter), cv2.cvtColor(image_np_with_detections, cv2.COLOR_RGB2BGR))
         #videoOut.write(image_np_with_detections)
 
         fps.update()
-        counter = counter + 1
+        #fps.fps()
         #else:
         #    break
-        fps.stop()
+    fps.stop()
 
-        print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
-        print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
-        vid.release()
-        cv2.destroyAllWindows()
-        #videoOut.release()
+    print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
+    print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+    #vid.release()
+  
+    cv2.destroyAllWindows()
+    vid.stop()
+    #videoOut.release()
 
 if __name__=="__main__":
 
